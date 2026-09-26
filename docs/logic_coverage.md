@@ -10,6 +10,7 @@
 | 4 | `isValidWorkingSlot`        | `AppointmentService`                     |    6    |
 | 5 | rating validation           | `ReviewService.createReview`             |    3    |
 | 6 | filter dispatch             | `ListingService.getAdminListings`        |    3    |
+| 7 | appointment ownership guard | `HealthRecordService.createHealthRecord` |    3    |
 
 ---
 
@@ -300,4 +301,39 @@ if (normalizedStatus == null && !hasMinPrice && !hasMaxPrice) {
 | 8 | F | F | F |   F    | `"ACTIVE"` | `10`     | `100`    | `findAdminListings`      |
 
 **Test set: all 8 rows.**
+
+---
+## 7. Appointment ownership guard — Clause Coverage
+
+`HealthRecordService.createHealthRecord`
+
+```java
+if (appointment.getResponsibleOwner() == null
+    || appointment.getResponsibleOwner().getUserId() == null
+    || !appointment.getResponsibleOwner().getUserId().equals(ownerId)) {
+    throw new RuntimeException("You can create health records only for your own appointments");
+}
+```
+
+**Clauses:** `a`: `appointment.getResponsibleOwner() == null`, `b`:
+`appointment.getResponsibleOwner().getUserId() == null`, `c`:
+`!appointment.getResponsibleOwner().getUserId().equals(ownerId)`
+**Predicate:** `p = a ∨ b ∨ c`
+
+Same shape and the same short-circuit dependency as predicate 2 (`a` true means there is no owner
+object, so `b`/`c` are never reached; `b` true means there is no id to compare, so `c` is never
+reached): only rows 4, 6, 7, 8 of the truth table are feasible.
+
+| # | a | b | c | p | Feasible |
+|:-:|:-:|:-:|:-:|:-:|:--------:|
+| 1 | T | T | T | T |    No    |
+| 2 | T | T | F | T |    No    |
+| 3 | T | F | T | T |    No    |
+| 4 | T | F | F | T | **Yes**  |
+| 5 | F | T | T | T |    No    |
+| 6 | F | T | F | T | **Yes**  |
+| 7 | F | F | T | T | **Yes**  |
+| 8 | F | F | F | F | **Yes**  |
+
+**Test set: rows 4, 6, 7, 8.**
 

@@ -1,4 +1,4 @@
-package com.petify.petify;
+package com.petify.petify.service;
 
 import com.petify.petify.domain.Client;
 import com.petify.petify.domain.Listing;
@@ -6,7 +6,6 @@ import com.petify.petify.domain.User;
 import com.petify.petify.repo.ClientRepository;
 import com.petify.petify.repo.FavoriteListingRepository;
 import com.petify.petify.repo.ListingRepository;
-import com.petify.petify.service.FavoritesService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

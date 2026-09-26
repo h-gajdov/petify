@@ -1,9 +1,10 @@
-package com.petify.petify;
+package com.petify.petify.service;
 
 import com.petify.petify.domain.Client;
 import com.petify.petify.domain.User;
 import com.petify.petify.domain.UserType;
 import com.petify.petify.dto.LoginRequest;
+import com.petify.petify.dto.UserActivityRankingProjection;
 import com.petify.petify.dto.UserDTO;
 import com.petify.petify.dto.SignUpRequest;
 import com.petify.petify.repo.AdminRepository;
@@ -12,8 +13,8 @@ import com.petify.petify.repo.ClientRepository;
 import com.petify.petify.repo.OwnerRepository;
 import com.petify.petify.repo.UserRepository;
 import com.petify.petify.repo.VetClinicRepository;
-import com.petify.petify.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -34,6 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -466,5 +468,63 @@ public class AuthenticationServiceTests {
         client.setBlocked(blocked);
         client.setBlockedReason(reason);
         return client;
+    }
+
+
+    @Test
+    void isUserInTopActive_row5_negativeUserId() {
+        UserActivityRankingProjection row = mock(UserActivityRankingProjection.class);
+        when(row.getUserId()).thenReturn(-7L);
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenReturn(List.of(row));
+
+        assertTrue(authService.isUserInTopActive(-7L));
+    }
+
+    @Test
+    void isUserInTopActive_row8_zeroUserId() {
+        UserActivityRankingProjection row = mock(UserActivityRankingProjection.class);
+        when(row.getUserId()).thenReturn(0L);
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenReturn(List.of(row));
+
+        assertTrue(authService.isUserInTopActive(0L));
+    }
+
+    @Test
+    void isUserInTopActive_row1_repositoryThrows() {
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenThrow(new RuntimeException("db down"));
+
+        assertFalse(authService.isUserInTopActive(1L));
+    }
+
+    @Test
+    void isUserInTopActive_row2_emptyList() {
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenReturn(Collections.emptyList());
+
+        assertFalse(authService.isUserInTopActive(1L));
+    }
+
+    @Test
+    void isUserInTopActive_row3_nonEmptyListWithoutUser() {
+        UserActivityRankingProjection row = mock(UserActivityRankingProjection.class);
+        when(row.getUserId()).thenReturn(999L);
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenReturn(List.of(row));
+
+        assertFalse(authService.isUserInTopActive(1L));
+    }
+
+    @Test
+    void isUserInTopActive_row4_nonEmptyListWithUser() {
+        UserActivityRankingProjection row = mock(UserActivityRankingProjection.class);
+        when(row.getUserId()).thenReturn(1L);
+        when(analyticsRepository.getTopActiveUsers(any(), any())).thenReturn(List.of(row));
+
+        assertTrue(authService.isUserInTopActive(1L));
+    }
+
+    @Test
+    void isUserInTopActive_row5_nullUserId() {
+        assertFalse(authService.isUserInTopActive(null));
+
+        verify(analyticsRepository, never()).getTopActiveUsers(any(), any());
     }
 }
