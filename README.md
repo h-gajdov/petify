@@ -345,6 +345,12 @@ external backend with the test seed location enabled, for example by passing
 `--spring.flyway.locations=classpath:db/migration,filesystem:$PWD/src/test/resources/db/test-seed`
 from this repository. Use an isolated test database for that mode.
 
+Add `--record-video` to save an mp4 of each test (Chrome only, needs `ffmpeg`) as
+`ui-tests/videos/<file>__<test>.<outcome>.mp4`, plus `all-tests.mp4` joining them in
+run order. While recording, the page is sized to 1920x1000 (change it with
+`--video-size WIDTHxHEIGHT`), and a bar along the bottom shows the test name and result.
+`--video-dir DIR` changes the output directory.
+
 ## End-to-End Tests (TestNG)
 
 The opt-in TestNG suite starts the backend on a random HTTP port and a disposable
