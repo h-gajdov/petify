@@ -70,6 +70,105 @@ class FavoritesServiceTest {
     }
 
     @Test
+    void removeFavoriteWithNegativeUserIdStillResolvesClient() {
+        Client client = client(-11L);
+        Listing listing = listing(22L);
+        FavoriteListing favorite = new FavoriteListing(client, listing);
+        when(clientRepository.findByUserId(-11L)).thenReturn(Optional.of(client));
+        when(listingRepository.findById(22L)).thenReturn(Optional.of(listing));
+        when(favoriteRepository.findByClientAndListing(client, listing)).thenReturn(Optional.of(favorite));
+
+        favoritesService.removeFavorite(-11L, 22L);
+
+        verify(favoriteRepository).delete(favorite);
+    }
+
+    @Test
+    void removeFavoriteWithZeroUserIdStillResolvesClient() {
+        Client client = client(0L);
+        Listing listing = listing(22L);
+        FavoriteListing favorite = new FavoriteListing(client, listing);
+        when(clientRepository.findByUserId(0L)).thenReturn(Optional.of(client));
+        when(listingRepository.findById(22L)).thenReturn(Optional.of(listing));
+        when(favoriteRepository.findByClientAndListing(client, listing)).thenReturn(Optional.of(favorite));
+
+        favoritesService.removeFavorite(0L, 22L);
+
+        verify(favoriteRepository).delete(favorite);
+    }
+
+    @Test
+    void removeFavoriteWithNegativeListingIdStillResolvesListing() {
+        Client client = client(11L);
+        Listing listing = listing(-22L);
+        FavoriteListing favorite = new FavoriteListing(client, listing);
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.of(client));
+        when(listingRepository.findById(-22L)).thenReturn(Optional.of(listing));
+        when(favoriteRepository.findByClientAndListing(client, listing)).thenReturn(Optional.of(favorite));
+
+        favoritesService.removeFavorite(11L, -22L);
+
+        verify(favoriteRepository).delete(favorite);
+    }
+
+    @Test
+    void removeFavoriteWithZeroListingIdStillResolvesListing() {
+        Client client = client(11L);
+        Listing listing = listing(0L);
+        FavoriteListing favorite = new FavoriteListing(client, listing);
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.of(client));
+        when(listingRepository.findById(0L)).thenReturn(Optional.of(listing));
+        when(favoriteRepository.findByClientAndListing(client, listing)).thenReturn(Optional.of(favorite));
+
+        favoritesService.removeFavorite(11L, 0L);
+
+        verify(favoriteRepository).delete(favorite);
+    }
+
+    @Test
+    void removeFavoriteThrowsWhenClientNotFound() {
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> favoritesService.removeFavorite(11L, 22L))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Client not found");
+
+        verify(listingRepository, never()).findById(any());
+    }
+
+    @Test
+    void removeFavoriteWithNullUserId() {
+        when(clientRepository.findByUserId(null)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> favoritesService.removeFavorite(null, 22L))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Client not found");
+    }
+
+    @Test
+    void removeFavoriteWithNullListingId() {
+        Client client = client(11L);
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.of(client));
+        when(listingRepository.findById(null)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> favoritesService.removeFavorite(11L, null))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Listing not found");
+    }
+
+    @Test
+    void removeFavoriteThrowsWhenListingNotFound() {
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.of(client(11L)));
+        when(listingRepository.findById(22L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> favoritesService.removeFavorite(11L, 22L))
+            .isInstanceOf(RuntimeException.class)
+            .hasMessage("Listing not found");
+
+        verify(favoriteRepository, never()).findByClientAndListing(any(), any());
+    }
+
+    @Test
     void removeFavoriteThrowsWhenFavoriteDoesNotExist() {
         Client client = client(11L);
         Listing listing = listing(22L);
@@ -93,6 +192,16 @@ class FavoritesServiceTest {
 
         assertThat(favorited).isFalse();
         verify(listingRepository, never()).findById(any());
+        verify(favoriteRepository, never()).findByClientAndListing(any(), any());
+    }
+
+    @Test
+    void isFavoritedReturnsFalseWhenListingDoesNotExist() {
+        when(clientRepository.findByUserId(11L)).thenReturn(Optional.of(client(11L)));
+        when(listingRepository.findById(22L)).thenReturn(Optional.empty());
+
+        assertThat(favoritesService.isFavorited(11L, 22L)).isFalse();
+
         verify(favoriteRepository, never()).findByClientAndListing(any(), any());
     }
 

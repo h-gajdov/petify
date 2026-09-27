@@ -130,6 +130,49 @@
 
 ---
 
+### `HealthRecordService.createHealthRecord(Long ownerId, CreateHealthRecordRequest request)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/createHealthRecordGraph.png" alt="createHealthRecord Graph" height="900">
+</div>
+
+**Nodes:**
+1. `if (ownerId == null)`
+2. `throw new RuntimeException("Owner is required");`
+3. `if (request.getAppointmentId() == null)`
+4. `throw new RuntimeException("Appointment is required");`
+5. `if (request.getType() == null || request.getType().isBlank())`
+6. `throw new RuntimeException("Health record type is required");`
+7. `Appointment appointment = appointmentRepository.findById(request.getAppointmentId()).orElseThrow(...)` — the `orElseThrow` branch
+8. `throw new RuntimeException("Appointment not found");`
+9. `if (appointment.getResponsibleOwner() == null || ... || !appointment.getResponsibleOwner().getUserId().equals(ownerId))`
+10. `throw new RuntimeException("You can create health records only for your own appointments");`
+11. `if (!"DONE".equals(appointment.getStatus()))`
+12. `throw new RuntimeException("Health records can be added only after a completed appointment");`
+13. `if (healthRecordRepository.existsByAppointmentAppointmentId(appointment.getAppointmentId()))`
+14. `throw new RuntimeException("A health record already exists for this appointment");`
+15. `HealthRecord record = new HealthRecord(...); return mapToDTO(healthRecordRepository.save(record));`
+
+**Edges:**
+(1,2), (1,3), (3,4), (3,5), (5,6), (5,7), (7,8), (7,9), (9,10), (9,11), (11,12), (11,13), (13,14), (13,15)
+
+
+| Prime Path                  | Description / Constraints                                           |
+|:-----------------------------|:---------------------------------------------------------------------|
+| [1, 2]                       | `ownerId` is `null`                                                   |
+| [1, 3, 4]                    | `appointmentId` is `null`                                             |
+| [1, 3, 5, 6]                 | `type` is `null` or blank                                             |
+| [1, 3, 5, 7, 8]               | Appointment does not exist                                            |
+| [1, 3, 5, 7, 9, 10]           | Appointment belongs to a different owner                              |
+| [1, 3, 5, 7, 9, 11, 12]       | Appointment exists and is owned by the caller, but is not `DONE`      |
+| [1, 3, 5, 7, 9, 11, 13, 14]   | Appointment is `DONE`, but a health record for it already exists      |
+| [1, 3, 5, 7, 9, 11, 13, 15]   | All guards pass; the record is created (SUCCESS)                      |
+
+**Test Paths:** every prime path above is used directly as a test path
+
+---
+
 ### `AuthService.getAllUsers()`
 
 **Graph:**
@@ -163,6 +206,47 @@
 |:-------------------------|:----------------------------------------------|
 | [1, 2, 4, 5]             | [1, 2, 4, 5]                                  |
 | [1, 2, 3, 2, 3, 2, 4, 5] | [1, 2, 3], [2, 3, 2], [3, 2, 3], [3, 2, 4, 5] |
+
+---
+
+### `HealthRecordService.getHealthRecordsForPet(Long petId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/getHealthRecordsForPetGraph.png" alt="getHealthRecordsForPet Graph" height="600">
+</div>
+
+
+**Nodes:**
+1. `petRepository.findById(petId).orElseThrow(...); if (pet is not present)`
+2. `throw new RuntimeException("Pet not found");`
+3. `List<HealthRecordContextView> rows = healthRecordRepository.findContextByAnimalId(petId); rows.stream()`
+4. Stream loop head — is there another row to map?
+5. `HealthRecordDTO dto = mapContextToDTO(row);` (lambda body, one row)
+6. `.toList();`
+7. `return result;`
+
+**Edges:**
+(1,2), (1,3), (3,4), (4,5), (5,4), (4,6), (6,7)
+
+**All Prime Paths:**
+
+| Prime Path       | Description / Constraints                                                |
+|:-----------------|:-------------------------------------------------------------------------|
+| [1, 2]           | Pet does not exist                                                       |
+| [1, 3, 4, 5]     | Pet exists; the first row enters the mapping step                        |
+| [1, 3, 4, 6, 7]  | Pet exists; zero health records, the stream terminates without iterating |
+| [4, 5, 4]        | One full loop iteration: map a row and return to the stream head         |
+| [5, 4, 5]        | Two consecutive iterations (requires at least 2 records)                 |
+| [5, 4, 6, 7]     | Last row is mapped, then the stream terminates and the list is returned  |
+
+**Test Paths:**
+
+| Test Path                     | Covers Prime Paths                               |
+|:------------------------------|:-------------------------------------------------|
+| [1, 2]                        | [1, 2]                                           |
+| [1, 3, 4, 6, 7]               | [1, 3, 4, 6, 7]                                  |
+| [1, 3, 4, 5, 4, 5, 4, 6, 7]   | [1, 3, 4, 5], [4, 5, 4], [5, 4, 5], [5, 4, 6, 7] |
 
 ---
 
@@ -202,6 +286,395 @@
 *   [1, 3, 5, 6, 8]
 
 *(Every prime path is a complete path here, so the prime paths are themselves the test paths.)*
+
+---
+
+### `ReviewService.createReview(Long reviewerId, Long targetUserId, CreateReviewRequest request)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/reviewCreateReviewGraph.png" alt="createReview Graph" height="900">
+</div>
+
+**Nodes:**
+1. `if (request.getRating() == null || < 1 || > 5)`
+2. `throw new RuntimeException("Rating must be between 1 and 5");`
+3. `User reviewer = userRepository.findById(reviewerId).orElseThrow(...)`
+4. `throw new RuntimeException("Reviewer not found");`
+5. `User targetUser = userRepository.findById(targetUserId).orElseThrow(...)`
+6. `throw new RuntimeException("Target user not found");`
+7. `existingReview = userReviewRepository.find...(); if (existingReview.isPresent())`
+8. `if (!existingReviewEntity.getIsDeleted())`
+9. `throw new RuntimeException("You have already reviewed this user");`
+10. `logger.info(" User {} has a deleted review for user {} - can create a new one", ...);`
+11. `logger.info(" No existing review found - safe to create new review");`
+12. `Review review = new Review(...); review = reviewRepository.saveAndFlush(review); if (review.getReviewId() == null)`
+13. `throw new RuntimeException("Failed to save review - ID is null");`
+14. `UserReview created and saved; return reviewDTO;` (SUCCESS)
+
+**Edges:**
+(1,2), (1,3), (3,4), (3,5), (5,6), (5,7), (7,8), (7,11), (8,9), (8,10), (10,12), (11,12), (12,13), (12,14)
+
+| Prime Path                        | Description / Constraints                                     |
+|:----------------------------------|:--------------------------------------------------------------|
+| [1, 2]                            | Rating invalid                                                |
+| [1, 3, 4]                         | Reviewer does not exist                                       |
+| [1, 3, 5, 6]                      | Target user does not exist                                    |
+| [1, 3, 5, 7, 8, 9]                | An active (non-deleted) review already exists                 |
+| [1, 3, 5, 7, 8, 10, 12, 13]       | Prior review was soft-deleted, but the new save returns no ID |
+| [1, 3, 5, 7, 8, 10, 12, 14]       | Prior review was soft-deleted; the new one saves successfully |
+| [1, 3, 5, 7, 11, 12, 13]          | No prior review, but the new save returns no ID               |
+| [1, 3, 5, 7, 11, 12, 14]          | No prior review; saves successfully (SUCCESS)                 |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `ReviewService.createClinicReview(Long reviewerId, Long clinicId, CreateReviewRequest request)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/reviewCreateClinicReviewGraph.png" alt="createClinicReview Graph" height="900">
+</div>
+
+**Nodes:**
+1. `validateReviewRequest(request);` — throws if the rating is invalid
+2. `throw new RuntimeException("Rating must be between 1 and 5");`
+3. `User reviewer = getReviewer(reviewerId);`
+4. `throw new RuntimeException("Reviewer not found");`
+5. `if (!vetClinicRepository.existsById(clinicId))`
+6. `throw new RuntimeException("Clinic not found");`
+7. `if (!appointmentRepository.existsByResponsibleOwnerUserIdAndClinicIdAndStatus(reviewerId, clinicId, "DONE"))`
+8. `throw new RuntimeException("You can review this clinic only after a completed appointment");`
+9. `existingReview = clinicReviewRepository.find...(); if (existingReview.isPresent())`
+10. `throw new RuntimeException("You have already reviewed this clinic");`
+11. `Review saved; ClinicReview saved; return new ReviewDTO(review);` (SUCCESS)
+
+**Edges:**
+(1,2), (1,3), (3,4), (3,5), (5,6), (5,7), (7,8), (7,9), (9,10), (9,11)
+
+| Prime Path           | Description / Constraints                        |
+|:---------------------|:-------------------------------------------------|
+| [1, 2]               | Rating invalid                                   |
+| [1, 3, 4]            | Reviewer does not exist                          |
+| [1, 3, 5, 6]         | Clinic does not exist                            |
+| [1, 3, 5, 7, 8]      | No completed (`DONE`) appointment at that clinic |
+| [1, 3, 5, 7, 9, 10]  | Already reviewed this clinic                     |
+| [1, 3, 5, 7, 9, 11]  | All guards pass (SUCCESS)                        |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `ReviewService.updateReview(Long reviewId, Long userId, CreateReviewRequest request)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/reviewUpdateReviewGraph.png" alt="updateReview Graph" height="800">
+</div>
+
+**Nodes:**
+1. `validateReviewRequest(request);`
+2. `throw new RuntimeException("Rating must be between 1 and 5");`
+3. `Review review = reviewRepository.findById(reviewId).orElseThrow(...)`
+4. `throw new RuntimeException("Review not found");`
+5. `if (Boolean.TRUE.equals(review.getIsDeleted()))`
+6. `throw new RuntimeException("Review has been deleted");`
+7. `if (!review.getReviewer().getUserId().equals(userId))`
+8. `throw new RuntimeException("You can only edit your own reviews");`
+9. `review.setRating(...); review.setComment(...); return new ReviewDTO(reviewRepository.save(review));` (SUCCESS)
+
+**Edges:**
+(1,2), (1,3), (3,4), (3,5), (5,6), (5,7), (7,8), (7,9)
+
+| Prime Path      | Description / Constraints            |
+|:----------------|:-------------------------------------|
+| [1, 2]          | Rating invalid                       |
+| [1, 3, 4]       | Review does not exist                |
+| [1, 3, 5, 6]    | Review was already soft-deleted      |
+| [1, 3, 5, 7, 8] | Caller is not the review's author    |
+| [1, 3, 5, 7, 9] | All guards pass (SUCCESS)            |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `ReviewService.deleteReview(Long reviewId, Long userId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/reviewDeleteReviewGraph.png" alt="deleteReview Graph" height="500">
+</div>
+
+**Nodes:**
+1. `Review review = reviewRepository.findById(reviewId).orElseThrow(...)`
+2. `throw new RuntimeException("Review not found");`
+3. `if (!review.getReviewer().getUserId().equals(userId))`
+4. `throw new RuntimeException("You can only delete your own reviews");`
+5. `review.setIsDeleted(true); review.setUpdatedAt(...); reviewRepository.save(review);` (SUCCESS)
+
+**Edges:**
+(1,2), (1,3), (3,4), (3,5)
+
+| Prime Path    | Description / Constraints               |
+|:--------------|:----------------------------------------|
+| [1, 2]        | Review does not exist                   |
+| [1, 3, 4]     | Caller is not the review's author       |
+| [1, 3, 5]     | All guards pass — soft delete (SUCCESS) |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `ReviewService.getReviewsByUser(Long targetUserId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/reviewGetReviewsByUserGraph.png" alt="getReviewsByUser Graph" height="600">
+</div>
+
+**Nodes:**
+1. `User targetUser = userRepository.findById(targetUserId).orElseThrow(...)`
+2. `throw new RuntimeException("User not found");`
+3. `List<Review> reviews = userReviewRepository.findReviewsForTargetUser(targetUserId); reviews.stream()`
+4. Stream loop head
+5. `ReviewDTO dto = new ReviewDTO(r);` (lambda body, one review)
+6. `.collect(Collectors.toList());`
+7. `return reviewDTOs;`
+
+**Edges:**
+(1,2), (1,3), (3,4), (4,5), (5,4), (4,6), (6,7)
+
+| Prime Path      | Description / Constraints                                                  |
+|:----------------|:---------------------------------------------------------------------------|
+| [1, 2]          | Target user does not exist                                                 |
+| [1, 3, 4, 5]    | User exists; the first review enters the mapping step                      |
+| [1, 3, 4, 6, 7] | User exists; zero reviews, the stream terminates without iterating         |
+| [4, 5, 4]       | One full loop iteration: map a review and return to the stream head        |
+| [5, 4, 5]       | Two consecutive iterations (requires at least 2 reviews)                   |
+| [5, 4, 6, 7]    | Last review is mapped, then the stream terminates and the list is returned |
+
+**Test Paths:**
+
+| Test Path                    | Covers Prime Paths                               |
+|:-----------------------------|:-------------------------------------------------|
+| [1, 2]                       | [1, 2]                                           |
+| [1, 3, 4, 6, 7]              | [1, 3, 4, 6, 7]                                  |
+| [1, 3, 4, 5, 4, 5, 4, 6, 7]  | [1, 3, 4, 5], [4, 5, 4], [5, 4, 5], [5, 4, 6, 7] |
+
+The third test needs a user with exactly 2 reviews to walk the loop head twice in a row.
+
+---
+
+### `ListingService.getListingsByOwner(Long userId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/getHealthRecordsForPetGraph.png" alt="getListingsByOwner Graph (same shape as getHealthRecordsForPet)" height="600">
+</div>
+
+
+**Nodes:**
+1. `Owner owner = ownerRepository.findByUserId(userId).orElseThrow(...)`
+2. `throw new RuntimeException("Owner not found");`
+3. `listingRepository.findByOwner(owner).stream()`
+4. Stream loop head
+5. `ListingDTO dto = mapToDTO(listing);` (lambda body, one listing)
+6. `.collect(Collectors.toList());`
+7. `return listings;`
+
+**Edges:** (1,2), (1,3), (3,4), (4,5), (5,4), (4,6), (6,7)
+
+**Test Paths:**
+
+| Test Path                   | Covers Prime Paths                                                      |
+|:----------------------------|:------------------------------------------------------------------------|
+| [1, 2]                      | [1, 2] — not an owner                                                   |
+| [1, 3, 4, 6, 7]             | [1, 3, 4, 6, 7] — owner has no listings                                 |
+| [1, 3, 4, 5, 4, 5, 4, 6, 7] | [1, 3, 4, 5], [4, 5, 4], [5, 4, 5], [5, 4, 6, 7] — owner has 2 listings |
+
+
+---
+
+### `ListingService.updateListingStatus(Long listingId, String status, Long userId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/listingUpdateListingStatusGraph.png" alt="updateListingStatus Graph" height="500">
+</div>
+
+**Nodes:**
+1. `Listing listing = listingRepository.findById(listingId).orElseThrow(...)`
+2. `throw new RuntimeException("Listing not found");`
+3. `if (!listing.getOwnerId().equals(userId))`
+4. `throw new RuntimeException("You can only update your own listings");`
+5. `listing.setStatus(status); return mapToDTO(listingRepository.save(listing));` (SUCCESS)
+
+**Edges:** (1,2), (1,3), (3,4), (3,5)
+
+| Prime Path    | Description / Constraints                  |
+|:--------------|:-------------------------------------------|
+| [1, 2]        | Listing does not exist                     |
+| [1, 3, 4]     | Caller is not the listing's owner          |
+| [1, 3, 5]     | All guards pass — status updated (SUCCESS) |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `AppointmentService.getAvailableSlots(Long clinicId, LocalDate date)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/appointmentGetAvailableSlotsGraph.png" alt="getAvailableSlots Graph" height="500">
+</div>
+
+
+**Nodes:**
+1. `if (clinicId == null || date == null)`
+2. `throw new RuntimeException("Clinic and date are required");`
+3. `if (!vetClinicRepository.existsById(clinicId))`
+4. `throw new RuntimeException("Vet clinic not found");`
+5. `build booked/unavailable sets; Stream.iterate(dayStart, ...); is there a next slot before dayEnd?`
+6. `if (slot.isBefore(now) || bookedSlots.contains(slot) || unavailableSlots.contains(slot))` — the
+   three filters, folded into one decision the same way a compound `||` guard is folded elsewhere
+7. slot dropped; advance to the next slot
+8. `AppointmentSlotDTO dto = new AppointmentSlotDTO(slot, ...);` — slot kept; advance to the next slot
+9. loop terminates — no more slots before `dayEnd`
+10. `.toList(); return slots;` (SUCCESS)
+
+**Edges:** (1,2), (1,3), (3,4), (3,5), (5,6), (6,7), (6,8), (7,5), (8,5), (5,9), (9,10)
+
+| Prime Path      | Description / Constraints                                                   |
+|:----------------|:----------------------------------------------------------------------------|
+| [1, 2]          | `clinicId` or `date` missing                                                |
+| [1, 3, 4]       | Clinic does not exist                                                       |
+| [3, 5, 6, 7, 5] | A candidate slot is excluded (past, booked, or unavailable); loop continues |
+| [3, 5, 6, 8, 5] | A candidate slot survives all three filters and is mapped; loop continues   |
+| [6, 7, 5, 6]    | Two consecutive excluded slots                                              |
+| [6, 8, 5, 6]    | Two consecutive included slots                                              |
+| [5, 9, 10]      | The loop terminates and the slot list is returned                           |
+
+
+---
+
+### `AppointmentService.getAppointmentsForOwner(Long userId)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/getAppointmentsForOwnerGraph.png" alt="getAppointmentsForOwner Graph" height="900">
+</div>
+
+**Nodes:**
+1. `Owner owner = ownerRepository.findByUserId(userId).orElseThrow(...)`
+2. `throw new RuntimeException("User is not an owner. Only owners can view appointments.");`
+3. `appointmentRepository.find...(ownerId).stream()` — loop A head, is there another appointment?
+4. `if (!"CONFIRMED".equals(appointment.getStatus()))`
+5. excluded — not `CONFIRMED`; back to loop A head
+6. `if (appointment.getDateTime().isAfter(now))` — only reached when `CONFIRMED`
+7. excluded — still in the future; back to loop A head
+8. `appointment.setStatus("DONE");` — kept; back to loop A head
+9. `if (!updatedAppointments.isEmpty())` — loop A has exited
+10. `appointmentRepository.saveAll(updatedAppointments);`
+11. `appointmentRepository.find...(ownerId).stream()` — loop B head (a fresh fetch), is there another appointment to map?
+12. `OwnerAppointmentDTO dto = mapToOwnerDTO(appointment);` — back to loop B head
+13. `.toList();`
+14. `return appointments;` (SUCCESS)
+
+**Edges:** (1,2), (1,3), (3,4), (4,5), (5,3), (4,6), (6,7), (7,3), (6,8), (8,3), (3,9), (9,10),
+(10,11), (9,11), (11,12), (12,11), (11,13), (13,14)
+
+| Prime Path        | Description / Constraints                                        |
+|:------------------|:-----------------------------------------------------------------|
+| [1, 2]            | Caller is not an owner                                           |
+| [3, 4, 5, 3]      | An appointment isn't `CONFIRMED`; excluded before the date check |
+| [3, 4, 6, 7, 3]   | `CONFIRMED`, but its `dateTime` is still in the future           |
+| [3, 4, 6, 8, 3]   | `CONFIRMED` and past-due; marked `DONE`                          |
+| [9, 11]           | Loop A exits with nothing to save; straight into loop B          |
+| [9, 10, 11]       | Loop A exits with something to save                              |
+| [11, 12, 11]      | One appointment is mapped in loop B and the loop continues       |
+| [11, 13, 14]      | Loop B exits and the mapped list is returned (SUCCESS)           |
+
+**Test Paths:** `getAppointmentsForOwner_notOwner` → `[1, 2]`.
+`getAppointmentsForOwner_ignoresNonConfirmedAppointments`,
+`getAppointmentsForOwner_noPastDueAppointments`, and
+`getAppointmentsForOwner_marksPastConfirmedAppointmentsDone` each supply a single appointment that
+walks one of the three loop-A prime paths, then — since that same appointment is the only one loop B
+sees on its second fetch — also walks `[11, 12, 11]` down to `[11, 13, 14]`, and either `[9, 11]` or
+`[9, 10, 11]` depending on whether it ended up in `updatedAppointments`.
+
+---
+
+### `AppointmentService.notifyClinicAboutCancellation(Appointment appointment)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/appointmentNotifyClinicAboutCancellationGraph.png" alt="notifyClinicAboutCancellation Graph" height="500">
+</div>
+
+**Nodes:**
+1. `VetClinic clinic = ...; if (clinic == null || clinic.getUserId() == null)`
+2. `logger.warn(...); return;` — no notification sent
+3. `User clinicUser = ...; if (clinicUser == null)`
+4. `logger.warn(...); return;` — no notification sent
+5. `notificationRepository.save(new Notification(...));` (SUCCESS)
+
+**Edges:** (1,2), (1,3), (3,4), (3,5)
+
+| Prime Path | Description / Constraints                          |
+|:-----------|:------------------------------------------------------|
+| [1, 2]     | Clinic missing, or not linked to a user                |
+| [1, 3, 4]  | Clinic linked to a user, but that user no longer exists |
+| [1, 3, 5]  | Notification saved (SUCCESS)                            |
+
+**Test Paths:** every prime path is used directly.
+
+---
+
+### `PetService.savePetPhoto(MultipartFile photo)`
+
+**Graph:**
+<div align="center" style="padding: 4px; background-color: rgb(255 255 255);">
+  <img src="test_assets/petSavePetPhotoGraph.png" alt="savePetPhoto Graph" height="500">
+</div>
+
+**Nodes:**
+1. `if (!ALLOWED_IMAGE_TYPES.contains(contentType))`
+2. `throw new RuntimeException("Pet photo must be a JPG, PNG, WEBP, or GIF image");`
+3. `if (photo.getSize() > MAX_PHOTO_BYTES)`
+4. `throw new RuntimeException("Pet photo must be 5MB or smaller");`
+5. `switch (contentType) { ... }` — picks the file extension; a 4-way decision
+6. `case "image/jpeg" -> extension = ".jpg";`
+7. `case "image/png" -> extension = ".png";`
+8. `case "image/webp" -> extension = ".webp";`
+9. `case "image/gif" -> extension = ".gif";`
+10. `Files.createDirectories(PET_UPLOAD_DIR); ...build filename and target...; if (!target.startsWith(uploadRoot))`
+11. `throw new RuntimeException("Invalid upload target");`
+12. `Files.copy(photo.getInputStream(), target, ...)` — succeeds, or raises `IOException`
+13. `return "/uploads/pets/" + filename;` (SUCCESS)
+14. `catch (IOException e) { throw new RuntimeException("Failed to save pet photo", e); }`
+
+**Edges:** (1,2), (1,3), (3,4), (3,5), (5,6), (5,7), (5,8), (5,9), (6,10), (7,10), (8,10), (9,10),
+(10,11), (10,12), (12,13), (12,14)
+
+
+| Prime Path                  | Description / Constraints                                                                           |
+|:----------------------------|:----------------------------------------------------------------------------------------------------|
+| [1, 2]                      | Content type is not an allowed image type                                                           |
+| [1, 3, 4]                   | Photo exceeds the 5MB limit                                                                         |
+| [1, 3, 5, 6, 10, 12, 13]    | JPEG, saved successfully (SUCCESS)                                                                  |
+| [1, 3, 5, 7, 10, 12, 13]    | PNG, saved successfully (SUCCESS)                                                                   |
+| [1, 3, 5, 8, 10, 12, 13]    | WEBP, saved successfully (SUCCESS)                                                                  |
+| [1, 3, 5, 9, 10, 12, 13]    | GIF, saved successfully (SUCCESS)                                                                   |
+| [1, 3, 5, 6, 10, 12, 14]    | `Files.copy` (or the read from `photo.getInputStream()`) throws `IOException`, wrapped and rethrown |
+| [1, 3, 5, 6, 10, 11]        | Path-traversal guard — see below                                                                    |
+
+
+**Test Paths:** `addPetWithPhoto_rejectsDisallowedContentType` → `[1, 2]`;
+`addPetWithPhoto_rejectsPhotoOverFiveMegabytes` → `[1, 3, 4]`;
+`addPetWithPhoto_savesPhotoAndSetsUrl`, parameterized over all four content types, → the four
+`[..., 6/7/8/9, 10, 12, 13]` rows in one parameterized test; `addPetWithPhoto_wrapsIOExceptionFromCopy`
+→ `[1, 3, 5, 7, 10, 12, 14]` (supplies a `MultipartFile` whose `getInputStream()` throws).
 
 ---
 
