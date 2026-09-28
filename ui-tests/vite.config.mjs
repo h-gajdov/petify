@@ -1,4 +1,4 @@
-import frontendConfig from '../../petify-frontend/vite.config.ts'
+import frontendConfig from '../frontend/vite.config.ts'
 
 const target = process.env.PETIFY_UI_PROXY_TARGET
 

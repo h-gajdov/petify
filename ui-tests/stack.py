@@ -14,8 +14,9 @@ from urllib.request import urlopen
 from testcontainers.community.postgres import PostgresContainer
 
 
-BACKEND = Path(__file__).resolve().parents[1]
-FRONTEND = BACKEND.parent / "petify-frontend"
+ROOT = Path(__file__).resolve().parents[1]
+BACKEND = ROOT / "backend"
+FRONTEND = ROOT / "frontend"
 JAR = BACKEND / "target" / "petify-0.0.1-SNAPSHOT.jar"
 
 
@@ -123,7 +124,7 @@ def managed_ui_stack():
         frontend = subprocess.Popen(
             [
                 str(FRONTEND / "node_modules" / ".bin" / "vite"),
-                "--config", str(BACKEND / "ui-tests" / "vite.config.mjs"),
+                "--config", str(ROOT / "ui-tests" / "vite.config.mjs"),
                 "--host", "localhost", "--port", str(frontend_port), "--strictPort",
             ],
             cwd=FRONTEND,

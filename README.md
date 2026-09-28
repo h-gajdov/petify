@@ -1,587 +1,196 @@
-# Petify Backend
+# Petify: Software Testing
 
-The backend REST API for **Petify**, a full-stack platform for managing pet listings, owners, clients, reviews, favorites, and veterinary clinic workflows.
+This repository is for **testing** Petify, a full-stack platform for pet listings,
+owners, reviews, favorites, and veterinary clinics.
 
-This repository contains the server-side application built with **Java**, **Spring Boot**, and **PostgreSQL**. It handles authentication, authorization, business logic, validation, data persistence, and communication with the Petify frontend.
+**Veronika Ilioska** wrote Petify. This repository does not add product features.
+It combines her backend and frontend in one monorepo and adds automated tests and
+test-design documents for that software.
 
-## Features
+| | Original repository (by Veronika Ilioska) | Fork used here |
+|---|---|---|
+| Backend (Java, Spring Boot, PostgreSQL) | [veronika-ilioska/petify-backend](https://github.com/veronika-ilioska/petify-backend) | [h-gajdov/petify-backend](https://github.com/h-gajdov/petify-backend) |
+| Frontend (Vue 3, Vite, TypeScript) | [veronika-ilioska/petify-frontend](https://github.com/veronika-ilioska/petify-frontend) | [h-gajdov/petify-frontend](https://github.com/h-gajdov/petify-frontend) |
 
-### Authentication and authorization
+Petify was built for the **Databases** course at FINKI
+([project page](https://develop.finki.ukim.mk/projects/petify)).
 
-- User registration and login
-- Stateless authentication
-- Secure password hashing with BCrypt
-- Role-based endpoint protection
-- Support for administrator and client accounts
-- Account status management
-
-### Users and pet owners
-
-- Manage client profiles
-- Add and manage pets
-- Associate pets with their owners
-- Store pet information, metadata, and documents
-- Maintain owner and client relationships
-
-### Pet listings
-
-- Create and manage pet-related listings
-- Store pricing and location information
-- Control listing visibility
-- Track listing availability
-- Browse listing details through REST endpoints
-- Administrator moderation of listings
-
-### Favorites
-
-- Add listings to a user's favorites
-- Remove listings from favorites
-- Retrieve a user's saved listings
-
-### Reviews
-
-- Submit reviews as authenticated users
-- Retrieve reviews for owners or listings
-- Enforce review authorship and relationships
-- Store ratings and comments
-
-### Veterinary clinics
-
-- Submit veterinary clinic applications
-- Review clinic applications as an administrator
-- Approve or reject applications
-- Separate pending applications from active clinic records
-
-### Administrator functionality
-
-- Manage registered clients
-- Block or activate accounts
-- Moderate listings
-- Review veterinary clinic applications
-- Access protected administration endpoints
-
-## Technologies
-
-- **Java 17**
-- **Spring Boot 4**
-- **Spring Web MVC**
-- **Spring Security**
-- **Spring Data JPA**
-- **Hibernate**
-- **PostgreSQL**
-- **Flyway**
-- **Maven**
-- **HikariCP**
-- **Lombok**
-- **Docker Compose**
-- **BCrypt**
-- **JWT-based authentication**
-
-## Related Repository
-
-This repository contains the backend application.
-
-The frontend is available here:
-
-[Petify Frontend](https://github.com/veronika-ilioska/petify-frontend)
-
-## Architecture
-
-The project follows a layered architecture:
+## Repository layout
 
 ```text
-Controller
-    ↓
-Service
-    ↓
-Repository
-    ↓
-PostgreSQL
+.
+├── backend/     Spring Boot API and its Java tests (from petify-backend)
+├── frontend/    Vue 3 single-page app (from petify-frontend)
+├── ui-tests/    Selenium UI tests (Python, pytest) that run both apps together
+└── docs/        Test-design documents (graph, logic, ISP, and mutation coverage)
 ```
 
-### Controller layer
+`frontend/` was added with `git subtree`, so its commit history is kept.
 
-Receives HTTP requests, validates request data, and returns JSON responses.
+## Where to find the tests
 
-### Service layer
+### Backend tests (Java, JUnit 5, TestNG)
 
-Contains the application business logic, authorization checks, validation rules, and transactional operations.
+All backend tests are in [`backend/src/test/java/com/petify/petify`](backend/src/test/java/com/petify/petify).
 
-### Repository layer
+| Kind | Location | Notes |
+|---|---|---|
+| Service unit tests | [`service/`](backend/src/test/java/com/petify/petify/service) | Service-layer tests for appointments, auth, favorites, health records, listings, pets, reviews, recommendations, analytics, and the maintenance scheduler |
+| Logic coverage tests | [`AppointmentServiceLogicCoverageTest`](backend/src/test/java/com/petify/petify/service/AppointmentServiceLogicCoverageTest.java), [`ListingServiceLogicCoverageTest`](backend/src/test/java/com/petify/petify/service/ListingServiceLogicCoverageTest.java), [`ReviewServiceLogicCoverageTest`](backend/src/test/java/com/petify/petify/service/ReviewServiceLogicCoverageTest.java) | Parameterized tests that implement the cases in [`docs/logic_coverage.md`](docs/logic_coverage.md) |
+| MockMvc API tests | [`api/ApiMvcTest.java`](backend/src/test/java/com/petify/petify/api/ApiMvcTest.java) | Real controllers, services, and security against a Testcontainers PostgreSQL database |
+| End-to-end tests (TestNG) | [`e2e/PetifyE2EIT.java`](backend/src/test/java/com/petify/petify/e2e/PetifyE2EIT.java) | Starts the whole backend and calls it over HTTP; `-Pe2e` profile |
+| Stress tests | [`stress/ApiStressTest.java`](backend/src/test/java/com/petify/petify/stress/ApiStressTest.java) | Concurrent load on public endpoints; `-Pstress` profile |
+| Migration and context tests | [`PetifyApplicationTests`](backend/src/test/java/com/petify/petify/PetifyApplicationTests.java), [`ProductionMigrationsTest`](backend/src/test/java/com/petify/petify/ProductionMigrationsTest.java), [`config/FlywayConfigCompatibilityTest`](backend/src/test/java/com/petify/petify/config/FlywayConfigCompatibilityTest.java) | Application startup and Flyway migration checks |
+| Test seed data | [`backend/src/test/resources/db/test-seed`](backend/src/test/resources/db/test-seed) | Sample accounts, clinics, listings, and health records loaded only in tests |
 
-Uses Spring Data JPA to access and modify data stored in PostgreSQL.
+### UI tests (Selenium, pytest)
 
-### Domain layer
+The UI tests are in [`ui-tests/`](ui-tests):
 
-Contains the entities and relationships used to represent users, pets, listings, reviews, favorites, and veterinary clinics.
+- [`ui-tests/tests/`](ui-tests/tests): test cases for login, signup, top navigation,
+  listings, listing details, profiles, appointments, clinic dashboard, and admin pages
+- [`ui-tests/pages/`](ui-tests/pages): Page Object Model classes used by the tests
+- [`ui-tests/stack.py`](ui-tests/stack.py): starts PostgreSQL (Testcontainers), the
+  backend, and the frontend for a test run
+- [`ui-tests/video.py`](ui-tests/video.py): optional video recording of each test
 
-### Security layer
+### API collection (Postman)
 
-Handles authentication, password hashing, authorization, security filters, CORS, and protected routes.
+[`backend/postman/Petify_Api_Test.postman_collection.json`](backend/postman/Petify_Api_Test.postman_collection.json)
+contains a Postman collection for manual and automated API checks.
 
-## Project Structure
+### Test-design documents
 
-```text
-petify-backend/
-├── .mvn/
-├── sql/
-│   ├── ddl.sql
-│   └── dml.sql
-├── src/
-│   ├── main/
-│   │   ├── java/
-│   │   │   └── com/petify/petify/
-│   │   └── resources/
-│   └── test/
-├── docker-compose.yml
-├── mvnw
-├── mvnw.cmd
-├── pom.xml
-└── README.md
-```
+| Document | Contents |
+|---|---|
+| [`docs/graph_coverage.md`](docs/graph_coverage.md) | Control-flow graphs ([images](docs/test_assets)) and edge-pair and prime-path coverage requirements for service methods |
+| [`docs/logic_coverage.md`](docs/logic_coverage.md) | Predicate, clause, active-clause, and combinatorial coverage of service-layer conditions |
+| [`docs/isp.md`](docs/isp.md) | Input space partitioning (All Combinations and Base Choice coverage) |
+| [`docs/mutation_coverage.md`](docs/mutation_coverage.md) | How to run PIT mutation testing |
 
-The exact package structure under `src/main/java` may contain packages such as:
+## Running the tests
 
-```text
-config/
-controller/
-dto/
-model/
-repository/
-security/
-service/
-```
+Requirements: Java 17, Docker (for Testcontainers), and, for UI tests, Node.js,
+Python 3, and Chrome or Firefox.
 
-## Prerequisites
-
-Before running the application, install:
-
-- **Java 17**
-- **Docker Desktop**, or a local PostgreSQL installation
-- **Git**
-
-Maven does not need to be installed separately because the repository includes the Maven Wrapper.
-
-## Getting Started
-
-### 1. Clone the repository
+Backend tests (run from `backend/`):
 
 ```bash
-git clone https://github.com/veronika-ilioska/petify-backend.git
-cd petify-backend
+cd backend
+./mvnw test                                                        # unit, MockMvc, and migration tests
+./mvnw -Pe2e test-compile failsafe:integration-test failsafe:verify # TestNG end-to-end suite
+./mvnw test -Pstress                                               # stress tests (needs a running backend)
+./mvnw org.pitest:pitest-maven:mutationCoverage                    # mutation testing (PIT)
 ```
 
-### 2. Configure environment variables
-
-Create a `.env` file in the project root for the local PostgreSQL container:
-
-You can copy `.env.example` to `.env` for Docker Compose and to `.env.properties` for Spring Boot (or export the variables). If you already have a database volume, use its existing credentials. Start Docker Desktop before running Docker commands.
-
-```env
-DB_LOCAL_USERNAME=postgres
-DB_LOCAL_PASSWORD=your_password
-DB_LOCAL_NAME=petify
-```
-
-Do not commit real passwords or secrets to GitHub.
-
-### 3. Start PostgreSQL with Docker Compose
+UI tests (run from the repository root):
 
 ```bash
-docker compose up -d
-```
-
-The included Docker Compose configuration starts PostgreSQL on:
-
-```text
-localhost:5436
-```
-
-The database data is stored in a Docker volume so that it remains available after the container stops.
-
-To check whether the container is running:
-
-```bash
-docker compose ps
-```
-
-To stop it:
-
-```bash
-docker compose down
-```
-
-To stop it and remove the stored database volume:
-
-```bash
-docker compose down -v
-```
-
-## Spring Configuration
-
-Configure the Spring datasource in `src/main/resources/application.properties` or through environment variables.
-
-Example local configuration:
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5436/petify
-spring.datasource.username=${DB_LOCAL_USERNAME}
-spring.datasource.password=${DB_LOCAL_PASSWORD}
-
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.show-sql=false
-
-spring.flyway.enabled=true
-spring.flyway.locations=classpath:db/migration
-
-server.port=8080
-```
-
-For deployed environments, prefer environment variables:
-
-```properties
-spring.datasource.url=${DATABASE_URL}
-spring.datasource.username=${DATABASE_USERNAME}
-spring.datasource.password=${DATABASE_PASSWORD}
-```
-
-The exact variable names should match the configuration used by the application.
-
-## Security Configuration
-
-The backend uses stateless authentication and protected routes.
-
-Sensitive values such as token-signing secrets should be stored outside the source code:
-
-```env
-JWT_SECRET=replace_with_a_long_random_secret
-JWT_EXPIRATION=86400000
-```
-
-A production JWT secret should be long, random, and never committed to the repository.
-
-## Run the Application
-
-### Windows
-
-```bash
-mvnw.cmd spring-boot:run
-```
-
-### macOS or Linux
-
-```bash
-./mvnw spring-boot:run
-```
-
-The API will normally be available at:
-
-```text
-http://localhost:8080
-```
-
-## Build the Project
-
-### Windows
-
-```bash
-mvnw.cmd clean package
-```
-
-### macOS or Linux
-
-```bash
-./mvnw clean package
-```
-
-The generated JAR file will be stored in:
-
-```text
-target/
-```
-
-Run the packaged application with:
-
-```bash
-java -jar target/petify-0.0.1-SNAPSHOT.jar
-```
-
-## Run Tests
-
-### Windows
-
-```bash
-mvnw.cmd test
-```
-
-### macOS or Linux
-
-```bash
-./mvnw test
-```
-
-### UI tests with Testcontainers
-
-The Selenium UI suite starts an isolated PostgreSQL 15 container, builds and launches
-the backend against it, and starts the sibling `petify-frontend` Vite project. Flyway
-loads test-only seed data from `src/test/resources/db/test-seed` into the temporary
-database. Docker, Java,
-Node.js, Chrome or Firefox, and an installed frontend (`npm ci` in
-`../petify-frontend`) are required.
-
-From this repository:
-
-```bash
+(cd frontend && npm ci)
 python -m venv ui-tests/.venv
 ui-tests/.venv/bin/python -m pip install -r ui-tests/requirements.txt
-ui-tests/.venv/bin/python -m pytest ui-tests
+ui-tests/.venv/bin/python -m pytest ui-tests                   # add --record-video to save mp4s
 ```
 
-To run against applications you have already started, use
-`ui-tests/.venv/bin/python -m pytest ui-tests --external-stack`. In that mode,
-`PETIFY_BASE_URL` and `PETIFY_API_URL` select the frontend and backend URLs
-(defaults: `http://localhost:5173` and `http://localhost:8081`). Start the
-external backend with the test seed location enabled, for example by passing
-`--spring.flyway.locations=classpath:db/migration,filesystem:$PWD/src/test/resources/db/test-seed`
-from this repository. Use an isolated test database for that mode.
-
-Add `--record-video` to save an mp4 of each test (Chrome only, needs `ffmpeg`) as
-`ui-tests/videos/<file>__<test>.<outcome>.mp4`, plus `all-tests.mp4` joining them in
-run order. While recording, the page is sized to 1920x1000 (change it with
-`--video-size WIDTHxHEIGHT`), and a bar along the bottom shows the test name and result.
-`--video-dir DIR` changes the output directory.
-
-## End-to-End Tests (TestNG)
-
-The opt-in TestNG suite starts the backend on a random HTTP port and a disposable
-PostgreSQL 15 container, then runs the real Flyway migrations. Java 17 and a running
-Docker daemon are required; the first run downloads dependencies and container images.
-No separately running backend, development database, or `.env` credentials are needed.
-
-Run only the end-to-end suite on Windows:
-
-```powershell
-.\mvnw.cmd -Pe2e test-compile failsafe:integration-test failsafe:verify
-```
-
-On macOS or Linux:
-
-```sh
-./mvnw -Pe2e test-compile failsafe:integration-test failsafe:verify
-```
-
-The suite covers registration, login by username and email, duplicate registrations,
-incorrect credentials, pet creation and retrieval, promotion from client to owner,
-required pet fields, attempts to create pets for another user, and missing pets.
-Each test creates its own users through HTTP; the application and database container
-are stopped after the suite, including when assertions fail. No services or repositories
-are mocked. The tests use the API's current `X-User-Id` convention for pet creation.
-
-Reports are written to `target/failsafe-reports` (including TestNG HTML and XML).
-Docker or application startup failures fail the suite rather than silently skipping it.
-Normal `mvnw test` still runs JUnit and excludes these end-to-end tests. To run JUnit
-and the end-to-end suite together, use `mvnw verify -Pe2e`; the existing JUnit context
-test still requires its usual local database configuration.
-
-## Stress Tests
-
-Opt-in API stress tests use JUnit and Java's HTTP client. With the backend running
-on port 8081 and at least one active public listing:
-
-```sh
-.\mvnw.cmd test -Pstress
-.\mvnw.cmd test -Pstress "-Dstress.users=50" "-Dstress.requests=20"
-```
+[`backend/README.md`](backend/README.md) has more detail on each suite, the
+available options, and how to run the application itself.
+[`frontend/README.md`](frontend/README.md) covers the frontend.
 
-Normal Maven tests exclude stress tests. Four tests cover public listings, active
-listings, listing details, and clinics. Each test defaults to 20 concurrent workers
-making 10 requests each (200 measured requests per endpoint, plus setup requests).
-Every request must return HTTP 200 and valid JSON with the expected shape or listing
-ID. A failed request fails the test. Each request has a 10-second timeout and each
-load phase has a two-minute deadline.
+## Credits
 
-The terminal shows successful request counts and total elapsed time; JUnit reports
-are in `target/surefire-reports`. This simplified suite does not calculate latency
-percentiles, write CSV reports, or test login. `stress.users` (1–200),
-`stress.requests` (1–1000), and `stress.baseUrl` are the only settings; the old
-duration and workload settings no longer apply.
+**Application (backend and frontend):** [Veronika Ilioska](https://github.com/veronika-ilioska)
 
-If the test reports that it cannot reach the backend, start Docker Desktop,
-copy `.env.example` to `.env`, set your local database credentials, then run
-`docker compose up -d` and `.\mvnw.cmd spring-boot:run`. Wait for the
-`Started PetifyApplication` message before running stress tests in another terminal.
-The database port is 5436 and the API port is 8081.
+**Tests and test documentation:**
 
-## Database
+| Name | Index | GitHub |
+|---|---|---|
+| Kiril Veljanoski | 231028 | [KIRCA18](https://github.com/KIRCA18) |
+| Veronika Ilioska | 231035 | [veronika-ilioska](https://github.com/veronika-ilioska) |
+| Hristijan Gajdov | 231119 | [h-gajdov](https://github.com/h-gajdov) |
 
-The project uses PostgreSQL as its primary database.
+## Graph coverage images
 
-The `sql` directory contains:
+Control-flow graphs used in [`docs/graph_coverage.md`](docs/graph_coverage.md).
+The coverage requirements and test paths for each graph are in that document.
 
-| File | Purpose |
-|---|---|
-| `ddl.sql` | Database schema definitions |
-| `dml.sql` | Initial or sample data |
+### Edge-pair coverage
 
-The application also includes Flyway for version-controlled database migrations.
-Normal application runs load only `src/main/resources/db/migration`, which contains
-schema and data-transformation migrations. Test runs also load
-`src/test/resources/db/test-seed`, which contains sample accounts, clinics, pets,
-and listings. The test seed files are not packaged in the application JAR.
+#### `AppointmentService.cancelAppointmentForOwner`
 
-The migration structure is:
+<img src="docs/test_assets/cancelAppointmentForOwnerGraph.png" alt="cancelAppointmentForOwner graph" height="500">
 
-```text
-src/main/resources/db/migration/
-├── V1__initial_schema.sql
-└── ...schema migrations...
-src/test/resources/db/test-seed/
-├── V2__Insert_initial_data.sql
-└── ...sample and UI test data...
-```
+#### `AuthService.login`
 
-**Existing databases:** Earlier versions ran the sample migrations from the main
-location, including data inserts in V10. At startup, the backend recognizes this
-specific legacy Flyway history and repairs it automatically before migration.
-Unrelated migration errors still stop startup. The repair changes migration
-history only; it does not remove sample rows already inserted. Review those rows
-and their dependent records before any cleanup. New databases need no repair.
+<img src="docs/test_assets/loginGraph.png" alt="login graph" height="900">
 
-After updating a local checkout, run `./mvnw clean spring-boot:run` once so old
-migration files copied into `target/classes` cannot be loaded from a stale build.
+### Prime-path coverage
 
-After a migration has been applied, avoid editing it in later releases; add a new
-migration for future schema changes.
+#### `AppointmentService.markAppointmentNoShowForClinicUser`
 
-## API Requests
+<img src="docs/test_assets/markAppointmentNoShowForClinicUserGraph.png" alt="markAppointmentNoShowForClinicUser graph" height="500">
 
-The backend exposes RESTful endpoints that exchange JSON data.
+#### `HealthRecordService.createHealthRecord`
 
-A typical protected request uses an authorization header:
+<img src="docs/test_assets/createHealthRecordGraph.png" alt="createHealthRecord graph" height="900">
 
-```http
-Authorization: Bearer <token>
-```
+#### `AuthService.getAllUsers`
 
-Example login request:
+<img src="docs/test_assets/getAllUsersGraph.png" alt="getAllUsers graph" height="500">
 
-```http
-POST /api/auth/login
-Content-Type: application/json
-```
+#### `HealthRecordService.getHealthRecordsForPet` (same graph as ListingService.getListingsByOwner)
 
-```json
-{
-  "email": "user@example.com",
-  "password": "password"
-}
-```
+<img src="docs/test_assets/getHealthRecordsForPetGraph.png" alt="getHealthRecordsForPet graph" height="600">
 
-The exact routes and payloads depend on the controllers and DTOs defined in the project.
+#### `AuthService.signUp`
 
-## Frontend Integration
+<img src="docs/test_assets/signUpGraph.png" alt="signUp graph" height="500">
 
-For local development, the frontend usually runs at:
+#### `ReviewService.createReview`
 
-```text
-http://localhost:5173
-```
+<img src="docs/test_assets/reviewCreateReviewGraph.png" alt="createReview graph" height="900">
 
-The backend CORS configuration must allow requests from this origin.
+#### `ReviewService.createClinicReview`
 
-For deployment, add the deployed frontend address to the allowed origins instead of using a wildcard.
+<img src="docs/test_assets/reviewCreateClinicReviewGraph.png" alt="createClinicReview graph" height="900">
 
-The frontend should use the backend base URL through an environment variable:
+#### `ReviewService.updateReview`
 
-```env
-VITE_API_BASE_URL=http://localhost:8080
-```
+<img src="docs/test_assets/reviewUpdateReviewGraph.png" alt="updateReview graph" height="800">
 
-## Docker Compose Database Configuration
+#### `ReviewService.deleteReview`
 
-The included `docker-compose.yml` uses:
+<img src="docs/test_assets/reviewDeleteReviewGraph.png" alt="deleteReview graph" height="500">
 
-- PostgreSQL 15 Alpine
-- Host port `5436`
-- Container port `5432`
-- Environment-based database credentials
-- A persistent Docker volume
-- A PostgreSQL health check
+#### `ReviewService.getReviewsByUser`
 
-This configuration starts only the local database. The Spring Boot application is run separately through Maven or the packaged JAR.
+<img src="docs/test_assets/reviewGetReviewsByUserGraph.png" alt="getReviewsByUser graph" height="600">
 
-## Deployment
+#### `ListingService.updateListingStatus`
 
-The backend can be deployed to platforms such as Render, Railway, Fly.io, or another Java-compatible hosting service.
+<img src="docs/test_assets/listingUpdateListingStatusGraph.png" alt="updateListingStatus graph" height="500">
 
-Typical deployment settings:
+#### `AppointmentService.getAvailableSlots`
 
-```text
-Build command:
-./mvnw clean package -DskipTests
+<img src="docs/test_assets/appointmentGetAvailableSlotsGraph.png" alt="getAvailableSlots graph" height="500">
 
-Start command:
-java -jar target/petify-0.0.1-SNAPSHOT.jar
-```
+#### `AppointmentService.getAppointmentsForOwner`
 
-Required production environment variables may include:
+<img src="docs/test_assets/getAppointmentsForOwnerGraph.png" alt="getAppointmentsForOwner graph" height="900">
 
-```env
-DATABASE_URL=
-DATABASE_USERNAME=
-DATABASE_PASSWORD=
-JWT_SECRET=
-FRONTEND_URL=
-```
+#### `AppointmentService.notifyClinicAboutCancellation`
 
-On some platforms, PostgreSQL connection URLs need to be converted to JDBC format:
+<img src="docs/test_assets/appointmentNotifyClinicAboutCancellationGraph.png" alt="notifyClinicAboutCancellation graph" height="500">
 
-```text
-jdbc:postgresql://host:5432/database
-```
+#### `PetService.savePetPhoto`
 
+<img src="docs/test_assets/petSavePetPhotoGraph.png" alt="savePetPhoto graph" height="500">
 
-## MockMvc tests (real application components)
+### All-DU-paths coverage
 
-`ApiMvcTest` uses Spring MVC Test with `@SpringBootTest` and
-`@AutoConfigureMockMvc`. Services, repositories, password hashing, and security
-filters are real. Testcontainers starts an isolated PostgreSQL 15 database,
-and Flyway applies the real migrations and seed scripts. There are no Mockito
-mocks or stubs. JUnit runs the tests; response assertions use MockMvc.
+#### `AppointmentService.createUnavailableSlot`
 
-With Docker running, use:
+<img src="docs/test_assets/createUnavailableSlotGraph.png" alt="createUnavailableSlot graph" height="500">
 
-```bash
-./mvnw clean -Dtest=ApiMvcTest test
-```
+#### `AuthService.mapToDTO`
 
-On Windows, run `.\mvnw.cmd clean "-Dtest=ApiMvcTest" test`. The `mvc-test` profile
-excludes local/remote database settings, and the test disables the optional
-environment-file import. `@ServiceConnection` supplies the container's connection
-details to Spring. Each test runs in a transaction that rolls back its data
-afterward; startup migrations and seed data remain. These tests do not verify
-transaction commit behavior.
-
-The suite covers signup/login, duplicate registration, authentication failures,
-favorites, clinic lookup, admin access, and invalid request input. The selected
-command runs only `ApiMvcTest`; `PetifyApplicationTests` has its own PostgreSQL
-container and can run with the full Maven test suite.
-
-Use `mvn` if Maven is installed. Results are in `target/surefire-reports`.
-
-## Academic Context
-
-Petify was developed as a full-stack project for the **Databases** course at the Faculty of Computer Science and Engineering (FINKI).
-
-Project page: [Petify – Databases course project](https://develop.finki.ukim.mk/projects/petify)
-
-
-## Author
-
-**Veronika Ilioska**
-
-GitHub: [veronika-ilioska](https://github.com/veronika-ilioska)
-
-## License
-
-This project was created for educational purposes.
+<img src="docs/test_assets/mapToDTOGraph.png" alt="mapToDTO graph" height="700">
