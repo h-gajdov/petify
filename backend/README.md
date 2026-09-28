@@ -81,9 +81,8 @@ This repository contains the server-side application built with **Java**, **Spri
 
 This repository contains the backend application.
 
-The frontend is available here:
-
-[Petify Frontend](https://github.com/veronika-ilioska/petify-frontend)
+In this monorepo the frontend is in [`../frontend`](../frontend). The original
+frontend repository is [veronika-ilioska/petify-frontend](https://github.com/veronika-ilioska/petify-frontend).
 
 ## Architecture
 
@@ -322,14 +321,14 @@ mvnw.cmd test
 
 ### UI tests with Testcontainers
 
-The Selenium UI suite starts an isolated PostgreSQL 15 container, builds and launches
-the backend against it, and starts the sibling `petify-frontend` Vite project. Flyway
-loads test-only seed data from `src/test/resources/db/test-seed` into the temporary
-database. Docker, Java,
-Node.js, Chrome or Firefox, and an installed frontend (`npm ci` in
-`../petify-frontend`) are required.
+The Selenium UI suite lives in [`../ui-tests`](../ui-tests) at the root of the
+monorepo. It starts an isolated PostgreSQL 15 container, builds and launches
+the backend against it, and starts the Vite project in [`../frontend`](../frontend).
+Flyway loads test-only seed data from `src/test/resources/db/test-seed` into the
+temporary database. Docker, Java, Node.js, Chrome or Firefox, and an installed
+frontend (`npm ci` in `frontend/`) are required.
 
-From this repository:
+From the monorepo root:
 
 ```bash
 python -m venv ui-tests/.venv
@@ -343,7 +342,7 @@ To run against applications you have already started, use
 (defaults: `http://localhost:5173` and `http://localhost:8081`). Start the
 external backend with the test seed location enabled, for example by passing
 `--spring.flyway.locations=classpath:db/migration,filesystem:$PWD/src/test/resources/db/test-seed`
-from this repository. Use an isolated test database for that mode.
+from the `backend/` directory. Use an isolated test database for that mode.
 
 Add `--record-video` to save an mp4 of each test (Chrome only, needs `ffmpeg`) as
 `ui-tests/videos/<file>__<test>.<outcome>.mp4`, plus `all-tests.mp4` joining them in
