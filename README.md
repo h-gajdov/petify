@@ -107,3 +107,90 @@ available options, and how to run the application itself.
 | Kiril Veljanoski | 231028 | [KIRCA18](https://github.com/KIRCA18) |
 | Veronika Ilioska | 231035 | [veronika-ilioska](https://github.com/veronika-ilioska) |
 | Hristijan Gajdov | 231119 | [h-gajdov](https://github.com/h-gajdov) |
+
+## Graph coverage images
+
+Control-flow graphs used in [`docs/graph_coverage.md`](docs/graph_coverage.md).
+The coverage requirements and test paths for each graph are in that document.
+
+### Edge-pair coverage
+
+#### `AppointmentService.cancelAppointmentForOwner`
+
+<img src="docs/test_assets/cancelAppointmentForOwnerGraph.png" alt="cancelAppointmentForOwner graph" height="500">
+
+#### `AuthService.login`
+
+<img src="docs/test_assets/loginGraph.png" alt="login graph" height="900">
+
+### Prime-path coverage
+
+#### `AppointmentService.markAppointmentNoShowForClinicUser`
+
+<img src="docs/test_assets/markAppointmentNoShowForClinicUserGraph.png" alt="markAppointmentNoShowForClinicUser graph" height="500">
+
+#### `HealthRecordService.createHealthRecord`
+
+<img src="docs/test_assets/createHealthRecordGraph.png" alt="createHealthRecord graph" height="900">
+
+#### `AuthService.getAllUsers`
+
+<img src="docs/test_assets/getAllUsersGraph.png" alt="getAllUsers graph" height="500">
+
+#### `HealthRecordService.getHealthRecordsForPet` (same graph as ListingService.getListingsByOwner)
+
+<img src="docs/test_assets/getHealthRecordsForPetGraph.png" alt="getHealthRecordsForPet graph" height="600">
+
+#### `AuthService.signUp`
+
+<img src="docs/test_assets/signUpGraph.png" alt="signUp graph" height="500">
+
+#### `ReviewService.createReview`
+
+<img src="docs/test_assets/reviewCreateReviewGraph.png" alt="createReview graph" height="900">
+
+#### `ReviewService.createClinicReview`
+
+<img src="docs/test_assets/reviewCreateClinicReviewGraph.png" alt="createClinicReview graph" height="900">
+
+#### `ReviewService.updateReview`
+
+<img src="docs/test_assets/reviewUpdateReviewGraph.png" alt="updateReview graph" height="800">
+
+#### `ReviewService.deleteReview`
+
+<img src="docs/test_assets/reviewDeleteReviewGraph.png" alt="deleteReview graph" height="500">
+
+#### `ReviewService.getReviewsByUser`
+
+<img src="docs/test_assets/reviewGetReviewsByUserGraph.png" alt="getReviewsByUser graph" height="600">
+
+#### `ListingService.updateListingStatus`
+
+<img src="docs/test_assets/listingUpdateListingStatusGraph.png" alt="updateListingStatus graph" height="500">
+
+#### `AppointmentService.getAvailableSlots`
+
+<img src="docs/test_assets/appointmentGetAvailableSlotsGraph.png" alt="getAvailableSlots graph" height="500">
+
+#### `AppointmentService.getAppointmentsForOwner`
+
+<img src="docs/test_assets/getAppointmentsForOwnerGraph.png" alt="getAppointmentsForOwner graph" height="900">
+
+#### `AppointmentService.notifyClinicAboutCancellation`
+
+<img src="docs/test_assets/appointmentNotifyClinicAboutCancellationGraph.png" alt="notifyClinicAboutCancellation graph" height="500">
+
+#### `PetService.savePetPhoto`
+
+<img src="docs/test_assets/petSavePetPhotoGraph.png" alt="savePetPhoto graph" height="500">
+
+### All-DU-paths coverage
+
+#### `AppointmentService.createUnavailableSlot`
+
+<img src="docs/test_assets/createUnavailableSlotGraph.png" alt="createUnavailableSlot graph" height="500">
+
+#### `AuthService.mapToDTO`
+
+<img src="docs/test_assets/mapToDTOGraph.png" alt="mapToDTO graph" height="700">
