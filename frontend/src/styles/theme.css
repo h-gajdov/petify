@@ -1,0 +1,22 @@
+:root {
+  /* Petify theme */
+  --petify-orange: #f97316;
+  --petify-orange-hover: #ea580c;
+
+  /* Bootstrap v5 CSS variables */
+  --bs-primary: var(--petify-orange);
+  --bs-primary-rgb: 249, 115, 22;
+
+  --bs-link-color: var(--petify-orange);
+  --bs-link-hover-color: var(--petify-orange-hover);
+
+  --bs-focus-ring-color: rgba(249, 115, 22, 0.25);
+}
+
+.navbar-brand {
+  color: var(--petify-orange);
+}
+
+.navbar-brand:hover {
+  color: var(--petify-orange-hover);
+}

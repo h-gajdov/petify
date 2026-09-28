@@ -1,0 +1,73 @@
+import type { Listing } from '../types/listing'
+
+export const mockListings: Listing[] = [
+  {
+    id: 'luna-001',
+    title: 'Luna — Gentle Lab Mix',
+    petType: 'Dog',
+    breed: 'Labrador Retriever Mix',
+    age: 2,
+    ageUnit: 'years',
+    gender: 'Female',
+    size: 'Large',
+    city: 'Austin',
+    state: 'TX',
+    country: 'USA',
+    price: 150,
+    currency: 'USD',
+    status: 'Available',
+    tags: ['Good with kids', 'House trained'],
+    vaccinated: true,
+    spayed: true,
+    imageUrl:
+      'https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'Sweet, social, and loves fetch. Looking for an active family and long walks.',
+  },
+  {
+    id: 'milo-002',
+    title: 'Milo — Playful Orange Tabby',
+    petType: 'Cat',
+    breed: 'Domestic Shorthair',
+    age: 1,
+    ageUnit: 'year',
+    gender: 'Male',
+    size: 'Small',
+    city: 'Seattle',
+    state: 'WA',
+    country: 'USA',
+    price: 90,
+    currency: 'USD',
+    status: 'Available',
+    tags: ['Indoor only', 'Cuddly'],
+    vaccinated: true,
+    neutered: true,
+    imageUrl:
+      'https://images.unsplash.com/photo-1595433562696-19f5f41b0e29?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'A confident little explorer. Purrs instantly and loves wand toys.',
+  },
+  {
+    id: 'bella-003',
+    title: 'Bella — Calm Senior Companion',
+    petType: 'Dog',
+    breed: 'Beagle',
+    age: 9,
+    ageUnit: 'years',
+    gender: 'Female',
+    size: 'Medium',
+    city: 'Denver',
+    state: 'CO',
+    country: 'USA',
+    price: 50,
+    currency: 'USD',
+    status: 'Pending',
+    tags: ['Low energy', 'Great on leash'],
+    vaccinated: true,
+    spayed: true,
+    imageUrl:
+      'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1200&q=80',
+    description:
+      'Perfect couch buddy. Would love a quiet home and a soft blanket.',
+  },
+]
